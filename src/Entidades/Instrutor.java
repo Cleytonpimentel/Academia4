@@ -1,21 +1,21 @@
 package Entidades;
 
 public class Instrutor extends Pessoa {
-    private String especialidade;
+    private String especialidade; // Adicionando o campo especialidade
 
-    // Construtor que recebe nome, cpf e especialidade
-    public Instrutor(String nome, String cpf, String especialidade) {
-        super(nome, cpf);  // Chama o construtor da classe Pessoa
+    // Construtor com todos os parâmetros, incluindo os da classe Pessoa
+    public Instrutor(int id, String nome, String cpf, String endereco, String telefone, String especialidade) {
+        super(id, nome, cpf, endereco, telefone);  // Remover os parâmetros relacionados a rua, cidade, bairro e número
         this.especialidade = especialidade;
     }
 
-    // Construtor padrão (sem parâmetros)
-    public Instrutor() {
-        super();  // Chama o construtor da classe Pessoa, que pode ser um construtor sem parâmetros
-        this.especialidade = "";  // Inicializa a especialidade com uma string vazia ou valor default
+    // Construtor sem o ID e com apenas nome, cpf e especialidade
+    public Instrutor(String nome, String cpf, String especialidade) {
+        super(nome, cpf); // Chama o construtor da classe Pessoa
+        this.especialidade = especialidade;
     }
 
-    // Getter e Setter para especialidade
+    // Getters e Setters
     public String getEspecialidade() {
         return especialidade;
     }
@@ -24,9 +24,8 @@ public class Instrutor extends Pessoa {
         this.especialidade = especialidade;
     }
 
-    // Método toString para exibir as informações do instrutor
     @Override
     public String toString() {
-        return "ID: " + getId() + ", Nome: " + getNome() + ", CPF: " + getCpf() + ", Especialidade: " + especialidade;
+        return super.toString() + ", Especialidade: " + especialidade;  // Mostra a especialidade
     }
 }

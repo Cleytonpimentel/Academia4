@@ -28,7 +28,8 @@ public class InstrutorDAO {
 
     // Método para adicionar um instrutor no banco de dados
     public void adicionarInstrutor(Instrutor instrutor) {
-        String sql = "INSERT INTO instrutor (nome, cpf, especialidade) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO instrutor (nome, cpf, especialidade, endereco, telefone) " +
+                     "VALUES (?, ?, ?, ?, ?)";  // Removido rua, cidade, bairro e numero
         
         try {
             verificarConexao();
@@ -36,6 +37,8 @@ public class InstrutorDAO {
                 stmt.setString(1, instrutor.getNome());
                 stmt.setString(2, instrutor.getCpf());
                 stmt.setString(3, instrutor.getEspecialidade());
+                stmt.setString(4, instrutor.getEndereco());
+                stmt.setString(5, instrutor.getTelefone());
                 
                 stmt.executeUpdate();
                 System.out.println("Instrutor " + instrutor.getNome() + " adicionado com sucesso.");
@@ -47,7 +50,7 @@ public class InstrutorDAO {
 
     // Método para buscar um instrutor pelo CPF
     public Instrutor buscarInstrutor(String cpf) {
-        String sql = "SELECT id, nome, cpf, especialidade FROM instrutor WHERE cpf = ?";
+        String sql = "SELECT * FROM instrutor WHERE cpf = ?";
         Instrutor instrutor = null;
 
         try {
@@ -58,11 +61,13 @@ public class InstrutorDAO {
 
                 if (rs.next()) {
                     instrutor = new Instrutor(
+                            rs.getInt("id"),
                             rs.getString("nome"),
                             rs.getString("cpf"),
+                            rs.getString("endereco"),
+                            rs.getString("telefone"),
                             rs.getString("especialidade")
                     );
-                    instrutor.setId(rs.getInt("id"));
                 }
             }
         } catch (SQLException e) {
@@ -74,7 +79,7 @@ public class InstrutorDAO {
 
     // Método para listar todos os instrutores
     public List<Instrutor> listarTodos() {
-        String sql = "SELECT * FROM INSTRUTOR";
+        String sql = "SELECT * FROM instrutor";
         List<Instrutor> instrutores = new ArrayList<>();
         
         try {
@@ -83,11 +88,14 @@ public class InstrutorDAO {
                  ResultSet rset = ps.executeQuery()) {
 
                 while (rset.next()) {
-                    Instrutor instrutor = new Instrutor();
-                    instrutor.setId(rset.getInt("id"));
-                    instrutor.setNome(rset.getString("nome"));
-                    instrutor.setCpf(rset.getString("cpf"));
-                    instrutor.setEspecialidade(rset.getString("especialidade"));
+                    Instrutor instrutor = new Instrutor(
+                            rset.getInt("id"),
+                            rset.getString("nome"),
+                            rset.getString("cpf"),
+                            rset.getString("endereco"),
+                            rset.getString("telefone"),
+                            rset.getString("especialidade")
+                    );
                     instrutores.add(instrutor);
                 }
             }
@@ -100,14 +108,16 @@ public class InstrutorDAO {
 
     // Método para atualizar um instrutor
     public void atualizarInstrutor(Instrutor instrutor) {
-        String sql = "UPDATE instrutor SET nome = ?, especialidade = ? WHERE cpf = ?";
+        String sql = "UPDATE instrutor SET nome = ?, especialidade = ?, endereco = ?, telefone = ? WHERE cpf = ?";  // Removido rua, cidade, bairro e numero
 
         try {
             verificarConexao();
             try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                 stmt.setString(1, instrutor.getNome());
                 stmt.setString(2, instrutor.getEspecialidade());
-                stmt.setString(3, instrutor.getCpf());
+                stmt.setString(3, instrutor.getEndereco());
+                stmt.setString(4, instrutor.getTelefone());
+                stmt.setString(5, instrutor.getCpf());
 
                 int rowsAffected = stmt.executeUpdate();
                 if (rowsAffected > 0) {

@@ -6,11 +6,15 @@ import java.util.Scanner;
 import DAO.AtividadeDAO;
 import DAO.InstrutorDAO;
 import DAO.MembroDAO;
+import DAO.PerfilDAO;
+import DAO.PessoaDAO;
 import DAO.PlanoDAO;
 import DAO.SalaDAO;
 import Entidades.Atividade;
 import Entidades.Instrutor;
 import Entidades.Membro;
+import Entidades.Perfil;
+import Entidades.Pessoa;
 import Entidades.Plano;
 import Entidades.Sala;
 import Serviços.InstrutorService;
@@ -23,6 +27,7 @@ public class Main {
     private static InstrutorService instrutorService = new InstrutorService(new InstrutorDAO());
     private static SalaDAO salaDAO = new SalaDAO(); // Criação do objeto SalaDAO
     private static SalaService salaService = new SalaService(salaDAO);
+    
     
 
     public static void main(String[] args) {
@@ -82,7 +87,11 @@ public class Main {
         System.out.println("6. Sair");
 
         int opcao = scanner.nextInt();
-        scanner.nextLine();  // Limpar o buffer
+        scanner.nextLine(); // Limpar o buffer
+
+        PessoaDAO pessoaDAO = new PessoaDAO();
+        PlanoDAO planoDAO = new PlanoDAO();
+        PerfilDAO perfilDAO = new PerfilDAO();
 
         switch (opcao) {
         case 1:
@@ -92,8 +101,12 @@ public class Main {
             String nome = scanner.nextLine();
             System.out.print("CPF: ");
             String cpf = scanner.nextLine();
+            System.out.print("Endereço: ");
+            String endereco = scanner.nextLine();
+            System.out.print("Telefone: ");
+            String telefone = scanner.nextLine();
 
-            // Exibir os planos pré-cadastrados para o usuário
+            // Exibir os planos e pegar o plano escolhido
             System.out.println("Escolha o plano para o membro:");
             System.out.println("1. Semanal (R$ 50,00)");
             System.out.println("2. Mensal (R$ 150,00)");
@@ -102,7 +115,7 @@ public class Main {
 
             System.out.print("ID do Plano (1/2/3/4): ");
             int planoId = scanner.nextInt();
-            scanner.nextLine();  // Limpar o buffer
+            scanner.nextLine(); // Limpar o buffer
 
             // Validar a opção de plano
             if (planoId < 1 || planoId > 4) {
@@ -111,132 +124,169 @@ public class Main {
             }
 
             // Buscar o plano no banco usando o método buscarPlanoPorId
-            PlanoDAO planoDAO = new PlanoDAO();
             Plano plano = planoDAO.buscarPlanoPorId(planoId);
 
-            // Verificar se o plano foi encontrado
-            if (plano != null) {
-                // Criar o membro e salvar no banco de dados
-                Membro membro = new Membro(nome, cpf, plano);
-                membroDAO.cadastrarMembro(membro);
+            // Adicionar informações do perfil
+            System.out.println("Informações do Perfil:");
+            System.out.print("Sexo (Masculino/Feminino): ");
+            String sexo = scanner.nextLine();
+            System.out.print("Idade: ");
+            int idade = scanner.nextInt();
+            System.out.print("Altura (em metros, ex: 1.75): ");
+            double altura = scanner.nextDouble();
+            System.out.print("Peso (em kg, ex: 70.5): ");
+            double peso = scanner.nextDouble();
+            scanner.nextLine(); // Limpar o buffer
 
+            // Criar objeto Perfil
+            Perfil perfil = new Perfil(sexo, idade, altura, peso);
+
+            // Criar o membro e associar o perfil
+            if (plano != null) {
+                Membro membro = new Membro(nome, cpf, endereco, telefone, plano);
+                pessoaDAO.cadastrarPessoa(membro); // Usando o método de cadastro
                 System.out.println("Membro cadastrado com sucesso! ID: " + membro.getId());
+
+                // Após cadastrar o membro, associar o perfil a ele
+                perfilDAO.cadastrarPerfil(perfil, membro.getId()); // Associar o perfil ao membro
+                System.out.println("Perfil do membro cadastrado com sucesso!");
             } else {
                 System.out.println("Cadastro de membro não realizado. Plano inválido.");
             }
             break;
-            case 2:
-                // Buscar Membro
-                System.out.print("Digite o ID do Membro: ");
-                int id = scanner.nextInt();
-                scanner.nextLine();  // Limpar o buffer
 
-                Membro membroBuscado = membroDAO.buscarMembroPorId(id);
+        case 2:
+            // Buscar Membro
+            System.out.print("Digite o ID do Membro: ");
+            int idBusca = scanner.nextInt();
+            scanner.nextLine();
 
-                if (membroBuscado != null) {
-                    System.out.println("ID: " + membroBuscado.getId());
-                    System.out.println("Nome: " + membroBuscado.getNome());
-                    System.out.println("CPF: " + membroBuscado.getCpf());
-                    System.out.println("Plano: " + membroBuscado.getPlano().getNome());
-                    System.out.println("Valor do Plano: " + membroBuscado.getPlano().getValor());
-                } else {
-                    System.out.println("Membro não encontrado.");
+            Membro membroBuscado = pessoaDAO.buscarMembroPorId(idBusca);
+            if (membroBuscado != null) {
+                // Mostrar detalhes do membro incluindo o perfil
+                Perfil perfilMembro = membroBuscado.getPerfil();
+                System.out.printf("ID: %d\nNome: %s\nCPF: %s\nPlano: %s\nEndereço: %s\nTelefone: %s\nSexo: %s\nIdade: %d\nAltura: %.2f\nPeso: %.2f\n", 
+                    membroBuscado.getId(), 
+                    membroBuscado.getNome(), 
+                    membroBuscado.getCpf(),
+                    membroBuscado.getPlano() != null ? membroBuscado.getPlano().getNomePlano() : "Sem plano",
+                    membroBuscado.getEndereco(),
+                    membroBuscado.getTelefone(),
+                    perfilMembro.getSexo(),
+                    perfilMembro.getIdade(),
+                    perfilMembro.getAltura(),
+                    perfilMembro.getPeso());
+            } else {
+                System.out.println("Membro não encontrado.");
+            }
+            break;
+        case 3:
+            // Atualizar Membro
+            System.out.print("Digite o ID do Membro para atualizar: ");
+            int idAtualizar = scanner.nextInt();
+            scanner.nextLine();
+
+            Membro membroParaAtualizar = pessoaDAO.buscarMembroPorId(idAtualizar);
+            if (membroParaAtualizar != null) {
+                System.out.println("Membro encontrado.");
+
+                System.out.print("Novo Endereço (Deixe em branco para não alterar): ");
+                String novoEndereco = scanner.nextLine();
+                if (!novoEndereco.isEmpty()) {
+                    membroParaAtualizar.setEndereco(novoEndereco);
                 }
-                break;
 
-            case 3:
-                // Atualizar Membro
-                System.out.print("Digite o ID do Membro para atualizar: ");
-                int idMembro = scanner.nextInt();
-                scanner.nextLine();  // Limpar o buffer
-
-                Membro membroParaAtualizar = membroDAO.buscarMembroPorId(idMembro);
-
-                if (membroParaAtualizar != null) {
-                    System.out.println("Membro encontrado.");
-                    
-                    // Exibir os planos pré-cadastrados para o usuário
-                    System.out.println("Escolha o novo plano para o membro:");
-                    System.out.println("1. Semanal (R$ 50,00)");
-                    System.out.println("2. Mensal (R$ 150,00)");
-                    System.out.println("3. Semestral (R$ 750,00)");
-                    System.out.println("4. Anual (R$ 1400,00)");
-                    
-                    System.out.print("ID do Novo Plano (1/2/3/4): ");
-                    int novoPlanoId = scanner.nextInt();
-                    scanner.nextLine();  // Limpar o buffer
-
-                    // Criar o novo plano com base na escolha do usuário
-                    Plano novoPlano = null;
-                    switch (novoPlanoId) {
-                        case 1:
-                            novoPlano = new Plano("Semanal", 50.00); // Plano semanal
-                            break;
-                        case 2:
-                            novoPlano = new Plano("Mensal", 150.00); // Plano mensal
-                            break;
-                        case 3:
-                            novoPlano = new Plano("Semestral", 750.00); // Plano semestral
-                            break;
-                        case 4:
-                            novoPlano = new Plano("Anual", 1400.00); // Plano anual
-                            break;
-                        default:
-                            System.out.println("Opção inválida. O plano não foi atualizado.");
-                            break;
-                    }
-
-                    // Verificar se o plano foi selecionado corretamente
-                    if (novoPlano != null) {
-                        // Atualizar o plano do membro
-                        membroParaAtualizar.setPlano(novoPlano);
-                        membroDAO.atualizarMembro(membroParaAtualizar);
-
-                        System.out.println("Membro atualizado com sucesso!");
-                    } else {
-                        System.out.println("Plano inválido. Membro não atualizado.");
-                    }
-                } else {
-                    System.out.println("Membro não encontrado.");
+                System.out.print("Novo Telefone (Deixe em branco para não alterar): ");
+                String novoTelefone = scanner.nextLine();
+                if (!novoTelefone.isEmpty()) {
+                    membroParaAtualizar.setTelefone(novoTelefone);
                 }
-                break;
 
-            case 4:
-                // Remover Membro
-                System.out.print("Digite o ID do Membro para remover: ");
-                int idMembroRemover = scanner.nextInt();
-                scanner.nextLine();  // Limpar o buffer
+                // Atualizar perfil diretamente
+                Perfil perfilAtualizar = membroParaAtualizar.getPerfil();
 
-                membroDAO.excluirMembro(idMembroRemover);
+                System.out.print("Novo Sexo (Deixe em branco para não alterar): ");
+                String novoSexo = scanner.nextLine();
+                if (!novoSexo.isEmpty()) {
+                    perfilAtualizar.setSexo(novoSexo);
+                }
 
+                System.out.print("Nova Idade (Deixe em branco para não alterar): ");
+                String novaIdadeStr = scanner.nextLine();
+                if (!novaIdadeStr.isEmpty()) {
+                    perfilAtualizar.setIdade(Integer.parseInt(novaIdadeStr));
+                }
+
+                System.out.print("Nova Altura (Deixe em branco para não alterar): ");
+                String novaAlturaStr = scanner.nextLine();
+                if (!novaAlturaStr.isEmpty()) {
+                    perfilAtualizar.setAltura(Double.parseDouble(novaAlturaStr));
+                }
+
+                System.out.print("Novo Peso (Deixe em branco para não alterar): ");
+                String novoPesoStr = scanner.nextLine();
+                if (!novoPesoStr.isEmpty()) {
+                    perfilAtualizar.setPeso(Double.parseDouble(novoPesoStr));
+                }
+
+                // Atualizar perfil no banco
+                if (perfilDAO.atualizarPerfil(perfilAtualizar, membroParaAtualizar.getId())) {  // Correção aqui
+                    pessoaDAO.update(membroParaAtualizar); // Atualizar o membro
+                    System.out.println("Membro atualizado com sucesso!");
+                } else {
+                    System.out.println("Erro ao atualizar perfil.");
+                }
+            } else {
+                System.out.println("Membro não encontrado.");
+            }
+            break;
+
+        case 4:
+            // Remover Membro
+            System.out.print("Digite o ID do Membro para remover: ");
+            int idRemover = scanner.nextInt();
+            scanner.nextLine();
+
+            Membro membroParaExcluir = pessoaDAO.buscarMembroPorId(idRemover);
+            if (membroParaExcluir != null) {
+                // Excluir membro, o perfil é automaticamente excluído por estar vinculado
+                pessoaDAO.excluirPessoa(idRemover); 
                 System.out.println("Membro removido com sucesso!");
-                break;
+            } else {
+                System.out.println("Membro não encontrado.");
+            }
+            break;
 
-            case 5:
-                // Listar Membros
-                List<Membro> membros = membroDAO.listarMembros();
+        case 5:
+            // Listar Membros
+            List<Pessoa> pessoas = pessoaDAO.getPessoas();
+            if (pessoas.isEmpty()) {
+                System.out.println("Nenhum membro cadastrado.");
+            } else {
+                System.out.println("+-----------------------------------------------------------------------------------------------------------------------------+");
+                System.out.printf("| %-5s | %-20s | %-15s | %-10s | %-45s | %-15s | %-10s | %-5s | %-5s | %-5s |%n", 
+                    "ID", "Nome", "CPF", "Plano", "Endereço", "Telefone", "Sexo", "Idade", "Altura", "Peso");
+                System.out.println("+-------------------------------------------------------------------------------------------------------------------------------+");
 
-                if (membros.isEmpty()) {
-                    System.out.println("Nenhum membro cadastrado.");
-                } else {
-                    // Exibir cabeçalhos
-                    System.out.println("+-------------------------------------------------------------------------------+");
-                    System.out.printf("| %-5s | %-20s | %-15s | %-10s | %-15s |%n", "ID", "Nome", "CPF", "Plano", "Valor do Plano");
-                    System.out.println("+-------------------------------------------------------------------------------+");
-
-                    // Exibir os membros com uma formatação melhor
-                    for (Membro membroList : membros) {
-                        System.out.printf("| %-5d | %-20s | %-15s | %-10s | %-15.2f |%n",
-                                membroList.getId(),
-                                membroList.getNome(),
-                                membroList.getCpf(),
-                                membroList.getPlano().getNome(),
-                                membroList.getPlano().getValor());
+                for (Pessoa pessoa : pessoas) {
+                    if (pessoa instanceof Membro) {
+                        Membro membro = (Membro) pessoa;
+                        Perfil perfilMembro = membro.getPerfil();
+                        System.out.printf("| %-5d | %-20s | %-15s | %-10s | %-45s | %-15s | %-10s | %-5d | %-5.2f | %-5.2f |%n",
+                                membro.getId(),
+                                membro.getNome(),
+                                membro.getCpf(),
+                                membro.getPlano() != null ? membro.getPlano().getNomePlano() : "Sem plano",
+                                membro.getEndereco(),
+                                membro.getTelefone(),
+                                perfilMembro.getSexo(),
+                                perfilMembro.getIdade(),
+                                perfilMembro.getAltura(),
+                                perfilMembro.getPeso());
                     }
-
-                    System.out.println("+-------------------------------------------------------------------------------+");
                 }
-                break;
+            }
+            break;
 
             case 6:
                 // Sair
@@ -249,6 +299,8 @@ public class Main {
                 break;
         }
     }
+
+
 
     private static void gerenciarPlanos() {
         // Exibe as opções de gerenciamento de planos
@@ -323,7 +375,7 @@ public class Main {
                     scanner.nextLine();  // Limpar o buffer
 
                     // Atualiza as informações do plano
-                    planoParaAtualizar.setNome(novoNome);
+                    planoParaAtualizar.setNomePlano(novoNome);
                     planoParaAtualizar.setValor(novoValor);
 
                     // Aqui você implementaria o método de atualização no DAO, se necessário
@@ -496,21 +548,26 @@ public class Main {
         System.out.println("5. Listar Instrutores");
 
         int opcao = scanner.nextInt();
-        scanner.nextLine();
+        scanner.nextLine();  // Consumir a nova linha pendente
 
         switch (opcao) {
             case 1:
+                // Cadastro de Instrutor
                 System.out.print("Nome: ");
                 String nome = scanner.nextLine();
                 System.out.print("CPF: ");
                 String cpf = scanner.nextLine();
                 System.out.print("Especialidade: ");
                 String especialidade = scanner.nextLine();
+
+                // Criação do novo instrutor com os dados inseridos
                 Instrutor novoInstrutor = new Instrutor(nome, cpf, especialidade);
                 instrutorService.cadastrarInstrutor(novoInstrutor);
                 System.out.println("Instrutor cadastrado com sucesso!");
                 break;
+
             case 2:
+                // Buscar Instrutor
                 System.out.print("CPF: ");
                 cpf = scanner.nextLine();
                 Instrutor instrutor = instrutorService.buscarInstrutor(cpf);
@@ -523,49 +580,64 @@ public class Main {
                     System.out.println("Instrutor não encontrado.");
                 }
                 break;
+
             case 3:
+                // Atualizar Instrutor
                 System.out.print("CPF: ");
                 cpf = scanner.nextLine();
                 instrutor = instrutorService.buscarInstrutor(cpf);
                 if (instrutor != null) {
-                    System.out.print("Nome: ");
+                    System.out.print("Nome (atual: " + instrutor.getNome() + "): ");
                     nome = scanner.nextLine();
-                    System.out.print("Especialidade: ");
+                    System.out.print("Especialidade (atual: " + instrutor.getEspecialidade() + "): ");
                     String especialidade1 = scanner.nextLine();
-                    instrutor.setNome(nome); 
-                    instrutor.setEspecialidade(especialidade1); 
+                    
+                    // Atualizando os dados do instrutor
+                    instrutor.setNome(nome);
+                    instrutor.setEspecialidade(especialidade1);
                     instrutorService.atualizarInstrutor(instrutor);
                     System.out.println("Instrutor atualizado com sucesso!");
                 } else {
                     System.out.println("Instrutor não encontrado.");
                 }
                 break;
+
             case 4:
+                // Remover Instrutor
                 System.out.print("CPF: ");
                 cpf = scanner.nextLine();
                 instrutorService.removerInstrutor(cpf);
                 System.out.println("Instrutor removido com sucesso!");
                 break;
+
             case 5:
+                // Listar todos os Instrutores
                 List<Instrutor> instrutores = instrutorService.listarInstrutores();
                 if (instrutores.isEmpty()) {
                     System.out.println("Nenhum instrutor cadastrado.");
                 } else {
                     System.out.println("=== Lista de Instrutores ===");
-                    System.out.printf("%-5s %-20s %-15s %-20s%n", "ID", "Nome", "CPF", "Especialidade");
-                    System.out.println("----------------------------------------------------------");
+                    System.out.println("|----------------------------------------------------------------------------|");
+                    // Cabeçalho da tabela
+                    System.out.printf("| %-5s | %-25s | %-15s | %-20s |%n", "ID", "Nome", "CPF", "Especialidade");
+                    System.out.println("|----------------------------------------------------------------------------|");
+                    
+                    // Exibindo os dados dos instrutores
                     for (Instrutor i : instrutores) {
-                        System.out.printf("%-5d %-20s %-15s %-20s%n", 
+                        System.out.printf("| %-5d | %-25s | %-15s | %-20s |%n", 
                                           i.getId(), i.getNome(), i.getCpf(), i.getEspecialidade());
                     }
-                    System.out.println("----------------------------------------------------------");
+                    
+                    System.out.println("|----------------------------------------------------------------------------|");
                 }
                 break;
+
             default:
                 System.out.println("Opção inválida!");
-                break;
+                break;      
         }
     }
+
 
     private static void gerenciarSalas() {
         System.out.println("Gerenciar Salas:");

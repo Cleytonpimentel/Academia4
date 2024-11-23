@@ -1,21 +1,56 @@
 package Entidades;
 
 public class Membro extends Pessoa {
+    private String endereco;
+    private String telefone;
     private Plano plano;
+    private Perfil perfil; // Novo atributo para associar o perfil
 
-    // Construtor com todos os parâmetros
-    public Membro(int id, String nome, String cpf, Plano plano) {
-        super(id, nome, cpf);  // Chama o construtor da classe Pessoa
+    // Construtor com todos os parâmetros necessários (incluindo o perfil)
+    public Membro(int id, String nome, String cpf, String endereco, String telefone, Plano plano, Perfil perfil) {
+        super(id, nome, cpf); // Chama o construtor da classe Pessoa
+        this.endereco = endereco;
+        this.telefone = telefone;
         this.plano = plano;
+        this.perfil = perfil;
     }
 
-    // Construtor adicional para cadastrar membro sem plano, será útil para gerenciar novos membros
-    public Membro(String nome, String cpf, Plano plano) {
-        super(nome, cpf);  // Chama o construtor da classe Pessoa
+    // Construtor sem ID (útil para criação de novos membros, onde o ID será gerado automaticamente)
+    public Membro(String nome, String cpf, String endereco, String telefone, Plano plano, Perfil perfil) {
+        super(0, nome, cpf); // Define 0 como valor padrão para o ID
+        this.endereco = endereco;
+        this.telefone = telefone;
         this.plano = plano;
+        this.perfil = perfil;
     }
 
-    // Getter e Setter para o Plano
+    // Construtor básico (sem perfil)
+    public Membro(String nome, String cpf, String endereco, String telefone, Plano plano) {
+        super(0, nome, cpf); // Define 0 como valor padrão para o ID
+        this.endereco = endereco;
+        this.telefone = telefone;
+        this.plano = plano;
+        this.perfil = new Perfil(); // Inicializa um perfil vazio por padrão
+    }
+
+    // Getters e setters para os atributos
+
+    public String getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(String endereco) {
+        this.endereco = endereco;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
+
     public Plano getPlano() {
         return plano;
     }
@@ -24,21 +59,24 @@ public class Membro extends Pessoa {
         this.plano = plano;
     }
 
-    // Método para associar um plano a um membro, fornecendo o nome do plano
-    public void setPlano(String nomePlano) {
-        this.plano = buscarPlanoPorNome(nomePlano);
+    public Perfil getPerfil() {
+        return perfil;
     }
 
-    // Método auxiliar para buscar o plano pelo nome
-    private Plano buscarPlanoPorNome(String nome) {
-        // Aqui você pode implementar a lógica para buscar um plano no banco de dados
-        // ou retornar um plano fictício para fins de testes.
-        // Exemplo simplificado:
-        if ("Plano Básico".equalsIgnoreCase(nome)) {
-            return new Plano("Plano Básico", 100.00);
-        } else if ("Plano Avançado".equalsIgnoreCase(nome)) {
-            return new Plano("Plano Avançado", 150.00);
-        }
-        return null; // Caso o plano não seja encontrado
+    public void setPerfil(Perfil perfil) {
+        this.perfil = perfil;
+    }
+
+    @Override
+    public String toString() {
+        return "Membro{" +
+               "ID=" + getId() +
+               ", Nome='" + getNome() + '\'' +
+               ", CPF='" + getCpf() + '\'' +
+               ", Endereço='" + endereco + '\'' +
+               ", Telefone='" + telefone + '\'' +
+               ", Plano=" + (plano != null ? plano.getNomePlano() : "Sem plano") +
+               ", Perfil=" + (perfil != null ? perfil.toString() : "Sem perfil") +
+               '}';
     }
 }

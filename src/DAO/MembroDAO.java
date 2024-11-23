@@ -3,9 +3,10 @@ package DAO;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import Entidades.Membro;
-import Entidades.Plano;
 import DatabaseConnection.DatabaseConnection;
+import Entidades.Membro;
+import Entidades.Perfil;
+import Entidades.Plano;
 
 public class MembroDAO {
 
@@ -20,14 +21,14 @@ public class MembroDAO {
             }
         } catch (SQLException e) {
             System.out.println("Erro ao verificar a existência do plano: " + e.getMessage());
-            return false; // Retorna false em caso de erro
+            return false;
         }
     }
 
     // Método para cadastrar um membro
     public void cadastrarMembro(Membro membro) {
-        if (planoExiste(membro.getPlano().getId())) {  // Verifica se o plano existe
-            String sql = "INSERT INTO membro (nome, cpf, plano_id) VALUES (?, ?, ?)";
+        if (planoExiste(membro.getPlano().getId())) { // Verifica se o plano existe
+            String sql = "INSERT INTO membro (nome, cpf, plano_id, endereco, telefone) VALUES (?, ?, ?, ?, ?)";
 
             try (Connection conn = DatabaseConnection.getConexao();
                  PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -35,11 +36,31 @@ public class MembroDAO {
                 ps.setString(1, membro.getNome());
                 ps.setString(2, membro.getCpf());
                 ps.setInt(3, membro.getPlano().getId());
+                ps.setString(4, membro.getEndereco());
+                ps.setString(5, membro.getTelefone());
 
-                ps.executeUpdate();
+                ps.executeUpdate();  // Executa a inserção
+
+                // Recupera o ID gerado automaticamente para o membro
                 ResultSet rs = ps.getGeneratedKeys();
-                if (rs.next()) {
-                    membro.setId(rs.getInt(1)); // Define o ID gerado no objeto Membro
+                if (rs != null && rs.next()) {
+                    int membroId = rs.getInt(1); // ID do membro recém inserido
+                    membro.setId(membroId); // Atribui o ID gerado ao objeto membro
+
+                    // Agora, cadastramos o perfil, associando-o ao membro
+                    Perfil perfil = membro.getPerfil(); // Perfil do membro
+                    PerfilDAO perfilDAO = new PerfilDAO();
+                    
+                    // Vamos passar o ID do membro para o perfil
+                    boolean perfilCadastrado = perfilDAO.cadastrarPerfil(perfil, membroId);
+
+                    if (perfilCadastrado) {
+                        System.out.println("Perfil cadastrado com sucesso!");
+                    } else {
+                        System.out.println("Falha ao cadastrar perfil.");
+                    }
+                } else {
+                    System.out.println("Erro: ID gerado não recuperado.");
                 }
             } catch (SQLException e) {
                 System.out.println("Erro ao cadastrar membro: " + e.getMessage());
@@ -51,9 +72,14 @@ public class MembroDAO {
 
     // Método para buscar membro por ID
     public Membro buscarMembroPorId(int id) {
-        String sql = "SELECT m.id, m.nome, m.cpf, m.plano_id, p.nome AS plano_nome, p.valor AS plano_valor "
-                   + "FROM membro m JOIN plano p ON m.plano_id = p.id WHERE m.id = ?";
-        
+        String sql = "SELECT m.id, m.nome, m.cpf, m.plano_id, m.endereco, m.telefone, "
+                   + "p.sexo, p.idade, p.altura, p.peso, "
+                   + "pl.nome AS plano_nome, pl.valor AS plano_valor "
+                   + "FROM membro m "
+                   + "JOIN plano pl ON m.plano_id = pl.id "
+                   + "LEFT JOIN perfil p ON m.id = p.membro_id "
+                   + "WHERE m.id = ?";
+
         Membro membro = null;
 
         try (Connection conn = DatabaseConnection.getConexao();
@@ -63,9 +89,31 @@ public class MembroDAO {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
+                // Cria o objeto Plano
                 Plano plano = new Plano(rs.getString("plano_nome"), rs.getDouble("plano_valor"));
                 plano.setId(rs.getInt("plano_id"));
-                membro = new Membro(rs.getInt("id"), rs.getString("nome"), rs.getString("cpf"), plano);
+
+                // Cria o objeto Perfil
+                Perfil perfil = null;
+                if (rs.getString("sexo") != null) {
+                    perfil = new Perfil(
+                        rs.getString("sexo"),
+                        rs.getInt("idade"),
+                        rs.getDouble("altura"),
+                        rs.getDouble("peso")
+                    );
+                }
+
+                // Cria o objeto Membro com os dados recuperados
+                membro = new Membro(
+                    rs.getInt("id"),
+                    rs.getString("nome"),
+                    rs.getString("cpf"),
+                    rs.getString("endereco"),
+                    rs.getString("telefone"),
+                    plano,
+                    perfil
+                );
             }
         } catch (SQLException e) {
             System.out.println("Erro ao buscar membro por ID: " + e.getMessage());
@@ -76,15 +124,34 @@ public class MembroDAO {
 
     // Método para atualizar um membro
     public void atualizarMembro(Membro membro) {
-        if (planoExiste(membro.getPlano().getId())) {  // Verifica se o plano existe
-            String sql = "UPDATE membro SET plano_id = ? WHERE id = ?";
+        if (planoExiste(membro.getPlano().getId())) { // Verifica se o plano existe
+            String sql = "UPDATE membro SET nome = ?, cpf = ?, plano_id = ?, endereco = ?, telefone = ? WHERE id = ?";
 
             try (Connection conn = DatabaseConnection.getConexao();
                  PreparedStatement ps = conn.prepareStatement(sql)) {
 
-                ps.setInt(1, membro.getPlano().getId());
-                ps.setInt(2, membro.getId());
+                ps.setString(1, membro.getNome());
+                ps.setString(2, membro.getCpf());
+                ps.setInt(3, membro.getPlano().getId());
+                ps.setString(4, membro.getEndereco());
+                ps.setString(5, membro.getTelefone());
+                ps.setInt(6, membro.getId());
+
+                // Executa a atualização do membro
                 ps.executeUpdate();
+
+                // Atualiza o perfil associado ao membro
+                PerfilDAO perfilDAO = new PerfilDAO();
+                Perfil perfil = membro.getPerfil();  // Assume que o membro tem um perfil associado
+                if (perfil != null) {
+                    boolean sucessoPerfil = perfilDAO.atualizarPerfil(perfil, membro.getId());
+                    if (sucessoPerfil) {
+                        System.out.println("Perfil do membro atualizado com sucesso!");
+                    } else {
+                        System.out.println("Falha ao atualizar o perfil do membro.");
+                    }
+                }
+
             } catch (SQLException e) {
                 System.out.println("Erro ao atualizar membro: " + e.getMessage());
             }
@@ -109,9 +176,13 @@ public class MembroDAO {
 
     // Método para listar todos os membros
     public List<Membro> listarMembros() {
-        String sql = "SELECT m.id, m.nome, m.cpf, m.plano_id, p.nome AS plano_nome, p.valor AS plano_valor "
-                   + "FROM membro m JOIN plano p ON m.plano_id = p.id";
-        
+        String sql = "SELECT m.id, m.nome, m.cpf, m.plano_id, m.endereco, m.telefone, "
+                     + "p.sexo, p.idade, p.altura, p.peso, "
+                     + "pl.nome AS plano_nome, pl.valor AS plano_valor "
+                     + "FROM membro m "
+                     + "LEFT JOIN perfil p ON m.id = p.membro_id "
+                     + "JOIN plano pl ON m.plano_id = pl.id";
+
         List<Membro> membros = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.getConexao();
@@ -120,9 +191,33 @@ public class MembroDAO {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
+                // Cria o objeto Plano
                 Plano plano = new Plano(rs.getString("plano_nome"), rs.getDouble("plano_valor"));
                 plano.setId(rs.getInt("plano_id"));
-                Membro membro = new Membro(rs.getInt("id"), rs.getString("nome"), rs.getString("cpf"), plano);
+
+                // Cria o objeto Perfil
+                Perfil perfil = null;
+                if (rs.getString("sexo") != null) {
+                    perfil = new Perfil(
+                        rs.getString("sexo"),
+                        rs.getInt("idade"),
+                        rs.getDouble("altura"),
+                        rs.getDouble("peso")
+                    );
+                }
+
+                // Cria o objeto Membro
+                Membro membro = new Membro(
+                    rs.getInt("id"),
+                    rs.getString("nome"),
+                    rs.getString("cpf"),
+                    rs.getString("endereco"),
+                    rs.getString("telefone"),
+                    plano,
+                    perfil
+                );
+
+                // Adiciona o membro à lista
                 membros.add(membro);
             }
         } catch (SQLException e) {

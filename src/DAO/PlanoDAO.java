@@ -1,10 +1,14 @@
 package DAO;
 
-import java.sql.*;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;  // Importando List e ArrayList
-import Entidades.Plano;
+import java.util.List;
+
 import DatabaseConnection.DatabaseConnection;
+import Entidades.Plano;
 
 public class PlanoDAO {
 
@@ -16,7 +20,7 @@ public class PlanoDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, plano.getNome());
-            ps.setDouble(2, plano.getValor());
+            ps.setBigDecimal(2, plano.getValor());  // Usando BigDecimal para o valor
             ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -33,7 +37,8 @@ public class PlanoDAO {
              ResultSet rset = ps.executeQuery()) {
 
             while (rset.next()) {
-                Plano plano = new Plano(rset.getString("nome"), rset.getDouble("valor"));
+                // Usando BigDecimal para o valor do plano
+                Plano plano = new Plano(rset.getString("nome"), rset.getBigDecimal("valor"));
                 plano.setId(rset.getInt("id"));
                 planos.add(plano);
             }
@@ -56,7 +61,8 @@ public class PlanoDAO {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                plano = new Plano(rs.getString("nome"), rs.getDouble("valor"));
+                // Usando BigDecimal para o valor do plano
+                plano = new Plano(rs.getString("nome"), rs.getBigDecimal("valor"));
                 plano.setId(rs.getInt("id"));
             }
         } catch (SQLException e) {
