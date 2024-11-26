@@ -20,7 +20,7 @@ public class PessoaDAO {
     private static int contadorId = 1; // Contador para gerar IDs únicos
 
     // Método para cadastrar uma pessoa
-    public void cadastrarPessoa(Pessoa pessoa) {
+    public boolean cadastrarPessoa(Pessoa pessoa) {
         String sql = "INSERT INTO pessoa (nome, cpf, endereco, telefone, tipo_pessoa, plano, valor, especialidade) "
                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -31,39 +31,40 @@ public class PessoaDAO {
             ps.setString(2, pessoa.getCpf()); // CPF
             ps.setString(3, pessoa.getEndereco());  // Endereço
             ps.setString(4, pessoa.getTelefone());  // Telefone
-            ps.setInt(5, pessoa instanceof Membro ? 1 : (pessoa instanceof Instrutor ? 2 : 0)); // Tipo de pessoa (1 para Membro, 2 para Instrutor)
+            ps.setInt(5, pessoa instanceof Membro ? 1 : (pessoa instanceof Instrutor ? 2 : 0)); // Tipo de pessoa
 
             // Plano e Valor
             if (pessoa.getPlano() != null) {
                 ps.setString(6, pessoa.getPlano().getNomePlano());  // Nome do plano
                 ps.setDouble(7, pessoa.getPlano().getValor().doubleValue()); // Valor do plano
             } else {
-                ps.setString(6, ""); // Se não houver plano, deixa vazio
-                ps.setDouble(7, 0.0); // Valor 0, caso não tenha plano
+                ps.setString(6, ""); // Sem plano
+                ps.setDouble(7, 0.0); // Valor 0
             }
 
-            // Se for Instrutor, preenche a especialidade
+            // Especialidade
             if (pessoa instanceof Instrutor) {
                 Instrutor instrutor = (Instrutor) pessoa;
-                ps.setString(8, instrutor.getEspecialidade()); // Especialidade do Instrutor
+                ps.setString(8, instrutor.getEspecialidade());
             } else {
-                ps.setString(8, ""); // Se não for Instrutor, coloca vazio
+                ps.setString(8, ""); // Sem especialidade
             }
 
-            // Executa a inserção no banco
-            ps.executeUpdate();
+            int rowsAffected = ps.executeUpdate();
 
-            // Recupera a chave gerada automaticamente (ID) e atribui à pessoa
-            ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next()) {
-                pessoa.setId(rs.getInt(1)); // Atribui o ID gerado
-            } else {
-                // Se o banco não gerar o ID, geramos de forma programática
-                pessoa.setId(contadorId++);  // Atribui um ID único
+            if (rowsAffected > 0) {
+                // Obter ID gerado
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        pessoa.setId(rs.getInt(1)); // Definir ID na entidade
+                        return true; // Retorna sucesso
+                    }
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace(); // Imprime o erro, caso ocorra
+            e.printStackTrace();
         }
+        return false; // Retorna falha
     }
 
     // Método para atualizar uma pessoa
@@ -86,28 +87,43 @@ public class PessoaDAO {
     }
 
     // Método para deletar uma pessoa pelo ID
-    public void excluirPessoa(int id) {
+    public boolean excluirPessoa(int id) {
         String sql = "DELETE FROM pessoa WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConexao();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, id);
-            ps.executeUpdate();
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected > 0; // Retorna true se excluído, false caso contrário
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return false; // Retorna falha
     }
 
+    public List<Membro> getMembros() {
+        List<Membro> membros = new ArrayList<>();
+        List<Pessoa> pessoas = getPessoas();
+
+        for (Pessoa pessoa : pessoas) {
+          if (pessoa instanceof Membro) {
+            membros.add((Membro) pessoa);
+          }
+        }
+
+        return membros;
+      }
+    
     // Método para listar todas as pessoas
     public List<Pessoa> getPessoas() {
         List<Pessoa> pessoas = new ArrayList<>();
         String sql = "SELECT id, nome, cpf, tipo_pessoa, plano, valor, endereco, telefone, especialidade "
-                   + "FROM pessoa";
+                       + "FROM pessoa";
 
         try (Connection conn = DatabaseConnection.getConexao();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rset = ps.executeQuery()) {
+                 PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rset = ps.executeQuery()) {
 
             while (rset.next()) {
                 Pessoa pessoa = null;
@@ -179,4 +195,9 @@ public class PessoaDAO {
 
         return null;
     }
+
+	public boolean atualizarMembro(Membro membroAtualizar) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

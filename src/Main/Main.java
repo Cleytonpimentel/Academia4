@@ -14,13 +14,37 @@ import Entidades.Atividade;
 import Entidades.Instrutor;
 import Entidades.Membro;
 import Entidades.Perfil;
-import Entidades.Pessoa;
 import Entidades.Plano;
 import Entidades.Sala;
 import Serviços.InstrutorService;
 import Serviços.SalaService;
 
 public class Main {
+	
+	private static boolean cadastrarMembroPerfil(Membro membro, Perfil perfil) {
+	    // Cadastrar membro
+	    PessoaDAO pessoaDAO = new PessoaDAO();
+	    PerfilDAO perfilDAO = new PerfilDAO();
+	    
+	    // Salvar o Membro primeiro para garantir que ele tem um ID válido
+	    if (pessoaDAO.cadastrarPessoa(membro)) {
+	        // Agora que o membro foi salvo, o ID deve estar disponível
+	        System.out.println("Membro cadastrado com sucesso! ID: " + membro.getId());
+
+	        // Cadastrar perfil associado ao membro
+	        if (perfilDAO.cadastrarPerfil(perfil, membro.getId())) {
+	            System.out.println("Perfil do membro cadastrado com sucesso!");
+	            return true;
+	        } else {
+	            System.out.println("Erro ao cadastrar perfil do membro.");
+	        }
+	    } else {
+	        System.out.println("Erro ao cadastrar membro.");
+	    }
+	    return false;
+	}
+	
+	
     private static Scanner scanner = new Scanner(System.in);
 
     private static MembroDAO membroDAO = new MembroDAO();
@@ -78,230 +102,223 @@ public class Main {
     }
 
     private static void gerenciarMembros() {
-        System.out.println("Gerenciar Membros:");
-        System.out.println("1. Cadastrar Membro");
-        System.out.println("2. Buscar Membro");
-        System.out.println("3. Atualizar Membro");
-        System.out.println("4. Remover Membro");
-        System.out.println("5. Listar Membros");
-        System.out.println("6. Sair");
+        while (true) {
+            System.out.println("\nGerenciar Membros:");
+            System.out.println("1. Cadastrar Membro");
+            System.out.println("2. Buscar Membro");
+            System.out.println("3. Atualizar Membro");
+            System.out.println("4. Remover Membro");
+            System.out.println("5. Listar Membros");
+            System.out.println("6. Criar Perfil para Membro");
+            System.out.println("7. Sair");
 
-        int opcao = scanner.nextInt();
-        scanner.nextLine(); // Limpar o buffer
-
-        PessoaDAO pessoaDAO = new PessoaDAO();
-        PlanoDAO planoDAO = new PlanoDAO();
-        PerfilDAO perfilDAO = new PerfilDAO();
-
-        switch (opcao) {
-        case 1:
-            // Cadastrar Membro
-            System.out.println("Cadastro de Membro:");
-            System.out.print("Nome: ");
-            String nome = scanner.nextLine();
-            System.out.print("CPF: ");
-            String cpf = scanner.nextLine();
-            System.out.print("Endereço: ");
-            String endereco = scanner.nextLine();
-            System.out.print("Telefone: ");
-            String telefone = scanner.nextLine();
-
-            // Exibir os planos e pegar o plano escolhido
-            System.out.println("Escolha o plano para o membro:");
-            System.out.println("1. Semanal (R$ 50,00)");
-            System.out.println("2. Mensal (R$ 150,00)");
-            System.out.println("3. Semestral (R$ 750,00)");
-            System.out.println("4. Anual (R$ 1400,00)");
-
-            System.out.print("ID do Plano (1/2/3/4): ");
-            int planoId = scanner.nextInt();
+            System.out.print("Escolha uma opção: ");
+            int opcao = scanner.nextInt();
             scanner.nextLine(); // Limpar o buffer
 
-            // Validar a opção de plano
-            if (planoId < 1 || planoId > 4) {
-                System.out.println("Plano inválido. Escolha um plano entre 1 e 4.");
-                break;
+            PessoaDAO pessoaDAO = new PessoaDAO();
+            PlanoDAO planoDAO = new PlanoDAO();
+            PerfilDAO perfilDAO = new PerfilDAO();
+            MembroDAO membroDAO = new MembroDAO();
+            
+            switch (opcao) {
+                case 1:
+                    // Cadastrar Membro
+                    System.out.println("\nCadastro de Membro:");
+                    System.out.print("Nome: ");
+                    String nome = scanner.nextLine();
+                    System.out.print("CPF: ");
+                    String cpf = scanner.nextLine();
+                    System.out.print("Endereço: ");
+                    String endereco = scanner.nextLine();
+                    System.out.print("Telefone: ");
+                    String telefone = scanner.nextLine();
+
+                    System.out.println("Escolha o plano para o membro:");
+                    System.out.println("1. Semanal (R$ 50,00)");
+                    System.out.println("2. Mensal (R$ 150,00)");
+                    System.out.println("3. Semestral (R$ 750,00)");
+                    System.out.println("4. Anual (R$ 1400,00)");
+
+                    System.out.print("ID do Plano (1/2/3/4): ");
+                    int planoId = scanner.nextInt();
+                    scanner.nextLine(); // Limpar o buffer
+
+                    Plano plano = planoDAO.buscarPlanoPorId(planoId);
+                    if (plano == null) {
+                        System.out.println("Plano inválido. Operação cancelada.");
+                        break;
+                    }
+
+                    Membro novoMembro = new Membro(nome, cpf, endereco, telefone, plano);
+                    if (membroDAO.cadastrarMembro(novoMembro)) {
+                        System.out.println("Membro cadastrado com sucesso!");
+                    } else {
+                        System.out.println("Erro ao cadastrar membro.");
+                    }
+                    break;
+
+                case 2:
+                    // Buscar Membro
+                    System.out.print("\nDigite o ID do Membro: ");
+                    int idBusca = scanner.nextInt();
+                    scanner.nextLine();
+
+                    Membro membroBuscado = membroDAO.buscarMembroPorId(idBusca);
+                    if (membroBuscado != null) {
+                        Perfil perfilBuscado = perfilDAO.buscarPerfilPorMembroId(idBusca);
+                        if (perfilBuscado != null) {
+                            System.out.printf("\nID: %d\nNome: %s\nCPF: %s\nPlano: %s\nEndereço: %s\nTelefone: %s\nSexo: %s\nIdade: %d\nAltura: %.2f\nPeso: %.2f\n",
+                                    membroBuscado.getId(),
+                                    membroBuscado.getNome(),
+                                    membroBuscado.getCpf(),
+                                    membroBuscado.getPlano().getNomePlano(),
+                                    membroBuscado.getEndereco(),
+                                    membroBuscado.getTelefone(),
+                                    perfilBuscado.getSexo(),
+                                    perfilBuscado.getIdade(),
+                                    perfilBuscado.getAltura(),
+                                    perfilBuscado.getPeso());
+                        } else {
+                            System.out.println("Perfil não encontrado para este membro.");
+                        }
+                    } else {
+                        System.out.println("Membro não encontrado.");
+                    }
+                    break;
+
+                case 3:
+                    // Atualizar Membro
+                    System.out.print("\nDigite o ID do Membro para atualizar: ");
+                    int idAtualizar = scanner.nextInt();
+                    scanner.nextLine();
+
+                    Membro membroAtualizar = membroDAO.buscarMembroPorId(idAtualizar);
+                    if (membroAtualizar != null) {
+                        System.out.println("\nMembro encontrado. Deixe em branco para não alterar.");
+
+                        System.out.print("Novo Endereço: ");
+                        String novoEndereco = scanner.nextLine();
+                        if (!novoEndereco.isEmpty()) {
+                            membroAtualizar.setEndereco(novoEndereco);
+                        }
+
+                        System.out.print("Novo Telefone: ");
+                        String novoTelefone = scanner.nextLine();
+                        if (!novoTelefone.isEmpty()) {
+                            membroAtualizar.setTelefone(novoTelefone);
+                        }
+
+                        if (membroDAO.atualizarMembro(membroAtualizar)) {
+                            System.out.println("Membro atualizado com sucesso!");
+                        } else {
+                            System.out.println("Erro ao atualizar membro.");
+                        }
+                    } else {
+                        System.out.println("Membro não encontrado.");
+                    }
+                    break;
+
+                case 4:
+                    // Remover Membro
+                    System.out.print("\nDigite o ID do Membro para remover: ");
+                    int idRemover = scanner.nextInt();
+                    scanner.nextLine(); // Limpar o buffer
+
+                    boolean perfilRemovido = perfilDAO.excluirPerfil(idRemover); // Certifique-se de que este método retorna boolean
+                    boolean membroRemovido = membroDAO.excluirMembro(idRemover);
+
+                    if (perfilRemovido && membroRemovido) {
+                        System.out.println("Membro removido com sucesso!");
+                    } else if (!perfilRemovido) {
+                        System.out.println("Erro ao remover o perfil associado.");
+                    } else if (!membroRemovido) {
+                        System.out.println("Erro ao remover o membro.");
+                    }
+                    break;
+
+                case 5:
+                    // Listar Membros
+                    System.out.println("\nLista de Membros:");
+                    
+                    // Imprimir cabeçalho com bordas
+                    System.out.println("+-----+----------------------+-----------------+------------------------+------------+--------+--------+-------+");
+                    System.out.printf("| %-3s | %-20s | %-15s | %-22s | %-10s | %-6s | %-6s | %-5s |\n", "ID", "Nome", "CPF", "Endereço", "Sexo", "Idade", "Altura", "Peso");
+                    System.out.println("+-----+----------------------+-----------------+------------------------+------------+--------+--------+-------+");
+
+                    List<Membro> membros = membroDAO.listarMembros();
+                    if (membros.isEmpty()) {
+                        System.out.println("Nenhum membro cadastrado.");
+                    } else {
+                        // Exibir os dados dos membros em formato tabular
+                        for (Membro m : membros) {
+                            Perfil p = perfilDAO.buscarPerfilPorMembroId(m.getId());
+                            System.out.printf("| %-3d | %-20s | %-15s | %-22s | %-10s | %-6d | %-6.2f | %-5.2f |\n",
+                                    m.getId(), 
+                                    m.getNome(), 
+                                    m.getCpf(),
+                                    m.getEndereco(),  // Exibir o endereço do membro ao lado do CPF
+                                    (p != null ? p.getSexo() : "N/A"),
+                                    (p != null ? p.getIdade() : 0),
+                                    (p != null ? p.getAltura() : 0.0),
+                                    (p != null ? p.getPeso() : 0.0));
+                        }
+                    }
+                    // Finalizar com a borda inferior
+                    System.out.println("+-----+----------------------+-----------------+------------------------+------------+--------+--------+-------+");
+                    break;
+
+                case 6:
+                    criarPerfilParaMembro1(membroDAO, perfilDAO);
+                    break;
+
+                case 7:
+                    System.out.println("Saindo...");
+                    return;
+
+                default:
+                    System.out.println("Opção inválida!");
+                    break;
             }
+        }
+    }
 
-            // Buscar o plano no banco usando o método buscarPlanoPorId
-            Plano plano = planoDAO.buscarPlanoPorId(planoId);
+    private static void criarPerfilParaMembro1(MembroDAO membroDAO, PerfilDAO perfilDAO) {
+        System.out.println("\nCriar Perfil para Membro:");
 
-            // Adicionar informações do perfil
+        System.out.print("Digite o ID do Membro: ");
+        int idMembro = scanner.nextInt();
+        scanner.nextLine(); // Limpar o buffer
+
+        Membro membro = membroDAO.buscarMembroPorId(idMembro);
+
+        if (membro != null) {
+            System.out.println("\nMembro encontrado:");
+            System.out.printf("ID: %d, Nome: %s\n", membro.getId(), membro.getNome());
+
             System.out.println("Informações do Perfil:");
             System.out.print("Sexo (Masculino/Feminino): ");
             String sexo = scanner.nextLine();
             System.out.print("Idade: ");
             int idade = scanner.nextInt();
-            System.out.print("Altura (em metros, ex: 1.75): ");
+            System.out.print("Altura (em metros): ");
             double altura = scanner.nextDouble();
-            System.out.print("Peso (em kg, ex: 70.5): ");
+            System.out.print("Peso (em kg): ");
             double peso = scanner.nextDouble();
             scanner.nextLine(); // Limpar o buffer
 
-            // Criar objeto Perfil
             Perfil perfil = new Perfil(sexo, idade, altura, peso);
 
-            // Criar o membro e associar o perfil
-            if (plano != null) {
-                Membro membro = new Membro(nome, cpf, endereco, telefone, plano);
-                pessoaDAO.cadastrarPessoa(membro); // Usando o método de cadastro
-                System.out.println("Membro cadastrado com sucesso! ID: " + membro.getId());
-
-                // Após cadastrar o membro, associar o perfil a ele
-                perfilDAO.cadastrarPerfil(perfil, membro.getId()); // Associar o perfil ao membro
-                System.out.println("Perfil do membro cadastrado com sucesso!");
+            if (perfilDAO.cadastrarPerfil(perfil, membro.getId())) {
+                System.out.println("Perfil criado com sucesso!");
             } else {
-                System.out.println("Cadastro de membro não realizado. Plano inválido.");
+                System.out.println("Erro ao criar perfil.");
             }
-            break;
-
-        case 2:
-            // Buscar Membro
-            System.out.print("Digite o ID do Membro: ");
-            int idBusca = scanner.nextInt();
-            scanner.nextLine();
-
-            Membro membroBuscado = pessoaDAO.buscarMembroPorId(idBusca);
-            if (membroBuscado != null) {
-                // Mostrar detalhes do membro incluindo o perfil
-                Perfil perfilMembro = membroBuscado.getPerfil();
-                System.out.printf("ID: %d\nNome: %s\nCPF: %s\nPlano: %s\nEndereço: %s\nTelefone: %s\nSexo: %s\nIdade: %d\nAltura: %.2f\nPeso: %.2f\n", 
-                    membroBuscado.getId(), 
-                    membroBuscado.getNome(), 
-                    membroBuscado.getCpf(),
-                    membroBuscado.getPlano() != null ? membroBuscado.getPlano().getNomePlano() : "Sem plano",
-                    membroBuscado.getEndereco(),
-                    membroBuscado.getTelefone(),
-                    perfilMembro.getSexo(),
-                    perfilMembro.getIdade(),
-                    perfilMembro.getAltura(),
-                    perfilMembro.getPeso());
-            } else {
-                System.out.println("Membro não encontrado.");
-            }
-            break;
-        case 3:
-            // Atualizar Membro
-            System.out.print("Digite o ID do Membro para atualizar: ");
-            int idAtualizar = scanner.nextInt();
-            scanner.nextLine();
-
-            Membro membroParaAtualizar = pessoaDAO.buscarMembroPorId(idAtualizar);
-            if (membroParaAtualizar != null) {
-                System.out.println("Membro encontrado.");
-
-                System.out.print("Novo Endereço (Deixe em branco para não alterar): ");
-                String novoEndereco = scanner.nextLine();
-                if (!novoEndereco.isEmpty()) {
-                    membroParaAtualizar.setEndereco(novoEndereco);
-                }
-
-                System.out.print("Novo Telefone (Deixe em branco para não alterar): ");
-                String novoTelefone = scanner.nextLine();
-                if (!novoTelefone.isEmpty()) {
-                    membroParaAtualizar.setTelefone(novoTelefone);
-                }
-
-                // Atualizar perfil diretamente
-                Perfil perfilAtualizar = membroParaAtualizar.getPerfil();
-
-                System.out.print("Novo Sexo (Deixe em branco para não alterar): ");
-                String novoSexo = scanner.nextLine();
-                if (!novoSexo.isEmpty()) {
-                    perfilAtualizar.setSexo(novoSexo);
-                }
-
-                System.out.print("Nova Idade (Deixe em branco para não alterar): ");
-                String novaIdadeStr = scanner.nextLine();
-                if (!novaIdadeStr.isEmpty()) {
-                    perfilAtualizar.setIdade(Integer.parseInt(novaIdadeStr));
-                }
-
-                System.out.print("Nova Altura (Deixe em branco para não alterar): ");
-                String novaAlturaStr = scanner.nextLine();
-                if (!novaAlturaStr.isEmpty()) {
-                    perfilAtualizar.setAltura(Double.parseDouble(novaAlturaStr));
-                }
-
-                System.out.print("Novo Peso (Deixe em branco para não alterar): ");
-                String novoPesoStr = scanner.nextLine();
-                if (!novoPesoStr.isEmpty()) {
-                    perfilAtualizar.setPeso(Double.parseDouble(novoPesoStr));
-                }
-
-                // Atualizar perfil no banco
-                if (perfilDAO.atualizarPerfil(perfilAtualizar, membroParaAtualizar.getId())) {  // Correção aqui
-                    pessoaDAO.update(membroParaAtualizar); // Atualizar o membro
-                    System.out.println("Membro atualizado com sucesso!");
-                } else {
-                    System.out.println("Erro ao atualizar perfil.");
-                }
-            } else {
-                System.out.println("Membro não encontrado.");
-            }
-            break;
-
-        case 4:
-            // Remover Membro
-            System.out.print("Digite o ID do Membro para remover: ");
-            int idRemover = scanner.nextInt();
-            scanner.nextLine();
-
-            Membro membroParaExcluir = pessoaDAO.buscarMembroPorId(idRemover);
-            if (membroParaExcluir != null) {
-                // Excluir membro, o perfil é automaticamente excluído por estar vinculado
-                pessoaDAO.excluirPessoa(idRemover); 
-                System.out.println("Membro removido com sucesso!");
-            } else {
-                System.out.println("Membro não encontrado.");
-            }
-            break;
-
-        case 5:
-            // Listar Membros
-            List<Pessoa> pessoas = pessoaDAO.getPessoas();
-            if (pessoas.isEmpty()) {
-                System.out.println("Nenhum membro cadastrado.");
-            } else {
-                System.out.println("+-----------------------------------------------------------------------------------------------------------------------------+");
-                System.out.printf("| %-5s | %-20s | %-15s | %-10s | %-45s | %-15s | %-10s | %-5s | %-5s | %-5s |%n", 
-                    "ID", "Nome", "CPF", "Plano", "Endereço", "Telefone", "Sexo", "Idade", "Altura", "Peso");
-                System.out.println("+-------------------------------------------------------------------------------------------------------------------------------+");
-
-                for (Pessoa pessoa : pessoas) {
-                    if (pessoa instanceof Membro) {
-                        Membro membro = (Membro) pessoa;
-                        Perfil perfilMembro = membro.getPerfil();
-                        System.out.printf("| %-5d | %-20s | %-15s | %-10s | %-45s | %-15s | %-10s | %-5d | %-5.2f | %-5.2f |%n",
-                                membro.getId(),
-                                membro.getNome(),
-                                membro.getCpf(),
-                                membro.getPlano() != null ? membro.getPlano().getNomePlano() : "Sem plano",
-                                membro.getEndereco(),
-                                membro.getTelefone(),
-                                perfilMembro.getSexo(),
-                                perfilMembro.getIdade(),
-                                perfilMembro.getAltura(),
-                                perfilMembro.getPeso());
-                    }
-                }
-            }
-            break;
-
-            case 6:
-                // Sair
-                System.out.println("Saindo...");
-                System.exit(0);
-                break;
-
-            default:
-                System.out.println("Opção inválida!");
-                break;
+        } else {
+            System.out.println("Membro não encontrado. Não é possível criar o perfil.");
         }
     }
-
-
-
+   
     private static void gerenciarPlanos() {
         // Exibe as opções de gerenciamento de planos
         System.out.println("Gerenciar Planos:");
@@ -413,6 +430,42 @@ public class Main {
         }
     }
 
+    private static void criarPerfilParaMembro(MembroDAO membroDAO, PerfilDAO perfilDAO) {
+        System.out.println("\nCriar Perfil para Membro:");
+
+        System.out.print("Digite o ID do Membro: ");
+        int idMembro = scanner.nextInt();
+        scanner.nextLine(); // Limpar o buffer
+
+        Membro membro = membroDAO.buscarMembroPorId(idMembro);
+
+        if (membro != null) {
+            System.out.println("Membro encontrado:");
+            System.out.printf("ID: %d, Nome: %s\n", membro.getId(), membro.getNome());
+
+            System.out.println("Informações do Perfil:");
+            System.out.print("Sexo (Masculino/Feminino): ");
+            String sexo = scanner.nextLine();
+            System.out.print("Idade: ");
+            int idade = scanner.nextInt();
+            System.out.print("Altura (em metros): ");
+            double altura = scanner.nextDouble();
+            System.out.print("Peso (em kg): ");
+            double peso = scanner.nextDouble();
+            scanner.nextLine(); // Limpar o buffer
+
+            Perfil perfil = new Perfil(sexo, idade, altura, peso);
+
+            if (perfilDAO.cadastrarPerfil(perfil, membro.getId())) {
+                System.out.println("Perfil criado com sucesso!");
+            } else {
+                System.out.println("Erro ao criar perfil.");
+            }
+        } else {
+            System.out.println("Membro não encontrado. Não é possível criar o perfil.");
+        }
+    }
+    
     private static void gerenciarAtividades() {
         // Exibe as opções de gerenciamento de atividades
         System.out.println("Gerenciar Atividades:");

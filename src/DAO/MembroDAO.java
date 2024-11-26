@@ -26,7 +26,7 @@ public class MembroDAO {
     }
 
     // Método para cadastrar um membro
-    public void cadastrarMembro(Membro membro) {
+    public boolean cadastrarMembro(Membro membro) {
         if (planoExiste(membro.getPlano().getId())) { // Verifica se o plano existe
             String sql = "INSERT INTO membro (nome, cpf, plano_id, endereco, telefone) VALUES (?, ?, ?, ?, ?)";
 
@@ -39,26 +39,20 @@ public class MembroDAO {
                 ps.setString(4, membro.getEndereco());
                 ps.setString(5, membro.getTelefone());
 
-                ps.executeUpdate();  // Executa a inserção
+                int rowsAffected = ps.executeUpdate();  // Executa a inserção
 
                 // Recupera o ID gerado automaticamente para o membro
                 ResultSet rs = ps.getGeneratedKeys();
                 if (rs != null && rs.next()) {
                     int membroId = rs.getInt(1); // ID do membro recém inserido
                     membro.setId(membroId); // Atribui o ID gerado ao objeto membro
+                    System.out.println("Membro cadastrado com sucesso! ID: " + membro.getId());
 
                     // Agora, cadastramos o perfil, associando-o ao membro
                     Perfil perfil = membro.getPerfil(); // Perfil do membro
                     PerfilDAO perfilDAO = new PerfilDAO();
-                    
-                    // Vamos passar o ID do membro para o perfil
-                    boolean perfilCadastrado = perfilDAO.cadastrarPerfil(perfil, membroId);
 
-                    if (perfilCadastrado) {
-                        System.out.println("Perfil cadastrado com sucesso!");
-                    } else {
-                        System.out.println("Falha ao cadastrar perfil.");
-                    }
+                    return perfilDAO.cadastrarPerfil(perfil, membroId); // Retorna sucesso da operação
                 } else {
                     System.out.println("Erro: ID gerado não recuperado.");
                 }
@@ -68,6 +62,7 @@ public class MembroDAO {
         } else {
             System.out.println("Plano não encontrado. Não é possível cadastrar o membro.");
         }
+        return false;
     }
 
     // Método para buscar membro por ID
@@ -123,7 +118,7 @@ public class MembroDAO {
     }
 
     // Método para atualizar um membro
-    public void atualizarMembro(Membro membro) {
+    public boolean atualizarMembro(Membro membro) {
         if (planoExiste(membro.getPlano().getId())) { // Verifica se o plano existe
             String sql = "UPDATE membro SET nome = ?, cpf = ?, plano_id = ?, endereco = ?, telefone = ? WHERE id = ?";
 
@@ -158,22 +153,23 @@ public class MembroDAO {
         } else {
             System.out.println("Plano não encontrado. Não é possível atualizar o membro.");
         }
+		return false;
     }
 
     // Método para excluir um membro
-    public void excluirMembro(int id) {
+    public boolean excluirMembro(int id) {
         String sql = "DELETE FROM membro WHERE id = ?";
-
         try (Connection conn = DatabaseConnection.getConexao();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, id);
-            ps.executeUpdate();
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected > 0; // Retorna true se a exclusão foi bem-sucedida
         } catch (SQLException e) {
             System.out.println("Erro ao excluir membro: " + e.getMessage());
+            return false; // Retorna false em caso de erro
         }
     }
-
     // Método para listar todos os membros
     public List<Membro> listarMembros() {
         String sql = "SELECT m.id, m.nome, m.cpf, m.plano_id, m.endereco, m.telefone, "

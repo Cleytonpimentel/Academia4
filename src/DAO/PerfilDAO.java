@@ -10,26 +10,47 @@ import Entidades.Perfil;
 
 public class PerfilDAO {
 
-    // Método para cadastrar um perfil associado a um membro
-	public boolean cadastrarPerfil(Perfil perfil, int membroId) {
-	    String sql = "INSERT INTO perfil (sexo, idade, altura, peso, membro_id) VALUES (?, ?, ?, ?, ?)";
+    // Método para cadastrar um perfil associado a um membr
+		 public boolean cadastrarPerfil(Perfil perfil, int membroId) {
+		     String sql = "INSERT INTO perfil (membro_id, sexo, idade, altura, peso) VALUES (?, ?, ?, ?, ?)";
 
+		     try (Connection conn = DatabaseConnection.getConexao();
+		          PreparedStatement ps = conn.prepareStatement(sql)) {
+
+		         ps.setInt(1, membroId);  // Associando o membro à tabela perfil
+		         ps.setString(2, perfil.getSexo());
+		         ps.setInt(3, perfil.getIdade());
+		         ps.setDouble(4, perfil.getAltura());
+		         ps.setDouble(5, perfil.getPeso());
+
+		         int rowsAffected = ps.executeUpdate();
+		         return rowsAffected > 0;  // Se inseriu com sucesso, retorna verdadeiro
+		     } catch (SQLException e) {
+		         System.out.println("Erro ao cadastrar perfil: " + e.getMessage());
+		         return false;
+		     }
+		 }
+
+	private boolean membroExiste(int membroId) {
+	    String sql = "SELECT COUNT(*) FROM membro WHERE id = ?";
 	    try (Connection conn = DatabaseConnection.getConexao();
 	         PreparedStatement ps = conn.prepareStatement(sql)) {
-
-	        ps.setString(1, perfil.getSexo());
-	        ps.setInt(2, perfil.getIdade());
-	        ps.setDouble(3, perfil.getAltura());
-	        ps.setDouble(4, perfil.getPeso());
-	        ps.setInt(5, membroId);  // Associa o perfil ao membro pelo ID
-
-	        int rowsAffected = ps.executeUpdate();
-	        return rowsAffected > 0; // Retorna verdadeiro se a inserção foi bem-sucedida
+	        ps.setInt(1, membroId);
+	        try (ResultSet rs = ps.executeQuery()) {
+	            return rs.next() && rs.getInt(1) > 0;
+	        }
 	    } catch (SQLException e) {
-	        System.out.println("Erro ao cadastrar perfil: " + e.getMessage());
-	        return false;
+	        e.printStackTrace();
+	        return false; // Em caso de erro, retorna falso
 	    }
 	}
+
+    private void validarPerfil(Perfil perfil) throws IllegalArgumentException {
+        // Implementar as validações específicas para o perfil
+        if (perfil.getIdade() <= 0) {
+            throw new IllegalArgumentException("Idade deve ser maior que zero");
+        }
+            }
 
     // Método para buscar um perfil associado ao ID do membro
 	public Perfil buscarPerfilPorMembroId(int membroId) {
