@@ -1,0 +1,65 @@
+CREATE DATABASE IF NOT EXISTS academia;
+USE academia;
+
+-- Tabela: Atividades
+CREATE TABLE atividades (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    descricao VARCHAR(255) NOT NULL,
+    instrutor_id INT,
+    FOREIGN KEY (instrutor_id) REFERENCES instrutores(id)
+);
+
+-- Tabela: Instrutores
+CREATE TABLE instrutores (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100),
+    cpf VARCHAR(20) UNIQUE,
+    especialidade VARCHAR(100),
+    pessoa_id INT,
+    endereco VARCHAR(255),
+    telefone VARCHAR(20)
+);
+
+-- Tabela: Pessoas
+CREATE TABLE pessoas (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255),
+    cpf VARCHAR(14),
+    plano_id INT,
+    endereco VARCHAR(255),
+    telefone VARCHAR(20),
+    sexo VARCHAR(10) NOT NULL,
+    idade INT NOT NULL,
+    altura DOUBLE NOT NULL,
+    peso DOUBLE NOT NULL,
+    membro_id INT NOT NULL,
+    FOREIGN KEY (plano_id) REFERENCES planos(id),
+    FOREIGN KEY (membro_id) REFERENCES membros(id)
+);
+
+-- Tabela: Planos
+CREATE TABLE planos (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255),
+    valor DECIMAL(10,2)
+);
+
+-- Tabela: Membros
+CREATE TABLE membros (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100),
+    cpf VARCHAR(11) UNIQUE,
+    endereco VARCHAR(255),
+    telefone VARCHAR(20),
+    tipo_pessoa INT NOT NULL,
+    plano VARCHAR(50),
+    valor DECIMAL(10,2),
+    especialidade VARCHAR(100)
+);
+
+-- Tabela: Salas
+CREATE TABLE salas (
+    sala_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    capacidade INT
+);
